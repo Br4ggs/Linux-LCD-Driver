@@ -1,0 +1,10 @@
+#!/bin/sh
+
+module="chardev"
+device="chardev"
+
+# remove module, with all given parameters
+rmmod ${module} $* || exit 1
+
+# remove "stale" node
+rm -f /dev/${device}0

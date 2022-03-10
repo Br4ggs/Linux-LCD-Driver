@@ -1,6 +1,6 @@
 # Personal project LCD linux driver
 
-
+TODO: clean up this README
 
 ## Getting started
 

@@ -1,0 +1,22 @@
+#!/bin/sh
+
+module="chardev"
+device="chardev"
+major=15
+mode="664"
+
+# insert module, with all given parameters
+insmod ./${module}.ko $* || exit 1
+
+# remove "stale" node
+rm -f /dev/${device}0
+
+# create node
+mknod /dev/${device}0 c ${major} 0
+
+# set permissions for newly created node
+group="staff"
+grep -q '^staff:' /etc/group || group="wheel"
+
+chgrp ${group} /dev/${device}0
+chmod ${mode}  /dev/${device}0
