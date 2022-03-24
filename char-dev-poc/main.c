@@ -22,9 +22,17 @@
 #include <linux/types.h>
 #include <linux/fs.h>
 #include <linux/cdev.h>
+#include <asm/io.h>
 
 MODULE_AUTHOR("Emiel vd Brink");
 MODULE_LICENSE("Dual BSD/GPL");
+
+//TODO: explain these magic numbers
+//see if they can be imported from somewhere else
+#define BCM2835_PERI_BASE        0x20000000
+#define GPIO_BASE                (BCM2835_PERI_BASE + 0x200000) /* GPIO controller */
+
+void *gpio = NULL;
 
 int chardev_open(struct inode *inode, struct file *filp)
 {
@@ -72,6 +80,8 @@ static void chardev_exit_module(void)
     dev_t dev = MKDEV(15, 0);
 
     unregister_chrdev_region(dev, 1);
+
+    iounmap(gpio);
 }
 
 static int chardev_init_module(void)
@@ -101,6 +111,38 @@ static int chardev_init_module(void)
     }
     
     printk(KERN_WARNING "chardev: char device registration successful\n");
+
+    //todo: check if region is available
+    //todo: check /proc/iomem
+    //todo: how many bytes is one register?
+    //TODO: reserve gpio region
+    gpio = ioremap(GPIO_BASE, 0x30);
+    if (gpio == NULL)
+    {
+        printk(KERN_WARNING "chardev: ioremap fail\n");
+        result = -1;
+        goto fail;
+    }
+
+    printk(KERN_WARNING "chardev: ioremap successful\n");
+    printk(KERN_WARNING "chardev: gpio address is %px\n", gpio);
+
+    unsigned int val = ioread32(gpio);
+
+    //these 2 statements show the same value, would a barrier here help?
+    printk(KERN_WARNING "chardev: read value is %u\n", val);
+
+    //set pin 4 to output
+    iowrite32(val | (1 << 12), gpio);
+
+    val = ioread32(gpio);
+
+    printk(KERN_WARNING "chardev: read value is now %u\n", val);
+
+    //set pin 4 to HIGH
+    iowrite32(1 << 4, gpio + 0x1C);
+
+    //do not forget memory barrier when writing!
 
     return 0;
 
