@@ -22,9 +22,7 @@ clean:
 deploy_home:
 	make clean
 	make build
-	scp $(BUILD_DIR)/chardev.ko    $(RASP_USR)@$(RASPIP_HOME):$(DEPLOY_DIR)
-	scp $(BUILD_DIR)/module_load   $(RASP_USR)@$(RASPIP_HOME):$(DEPLOY_DIR)
-	scp $(BUILD_DIR)/module_unload $(RASP_USR)@$(RASPIP_HOME):$(DEPLOY_DIR)
+	scp $(BUILD_DIR)/chardev.ko $(BUILD_DIR)/module_load $(BUILD_DIR)/module_unload $(RASP_USR)@$(RASPIP_HOME):$(DEPLOY_DIR)
 
 deploy_school:
 	make clean
