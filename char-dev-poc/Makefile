@@ -1,5 +1,5 @@
-# TODO: concaternate calls to scp into one
 # TODO: figure out if we can set execute permissions from this machine on raspberry
+# TODO: turn deploy_home and deploy_school into one build_pi command
 
 chardev-objs := main.o
 obj-m        := chardev.o

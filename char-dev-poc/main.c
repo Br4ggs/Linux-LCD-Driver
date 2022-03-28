@@ -1,4 +1,8 @@
-/* This small Proof Of Concept demonstrates how a char device kernel module
+/* 
+ * Author: Emiel van den Brink
+ * 
+ * Description:
+ * This small Proof Of Concept demonstrates how a char device kernel module
  * can be created and registered.
  *
  * It statically allocates major number 15 and registers one minor number (0)
@@ -52,11 +56,11 @@ ssize_t chardev_read(struct file *filp, char __user *buff, size_t count, loff_t 
     return 0;
 }
 
+//valid commands are:
+//GPHI
+//GPLO
 ssize_t chardev_write(struct file *filp, const char __user *buff, size_t count, loff_t *offp)
 {
-    //valid commands are:
-    //GPHI
-    //GPLO
     if (count < 4)
     {
         printk(KERN_ALERT "chardev: incorrect buffer size from user space\n");
@@ -180,13 +184,8 @@ static int chardev_init_module(void)
 
     printk(KERN_WARNING "chardev: read value is now %u\n", val);
 
-    //set pin 4 to HIGH
-    //iowrite32(1 << 4, gpio + 0x1C);
-
     //set pin 4 to LOW
     iowrite32(1 << 4, gpio + 0x28);
-
-    //do not forget memory barrier when writing!
 
     return 0;
 
