@@ -1,7 +1,7 @@
 #TODO: add target for local compilation
 #TODO: add target for cross-compilation
 
-ASSIGNMENT=readwritetest
+ASSIGNMENT=gpiotest
 
 #INC_DIRS
 
