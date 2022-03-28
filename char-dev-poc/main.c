@@ -54,8 +54,49 @@ ssize_t chardev_read(struct file *filp, char __user *buff, size_t count, loff_t 
 
 ssize_t chardev_write(struct file *filp, const char __user *buff, size_t count, loff_t *offp)
 {
+    //valid commands are:
+    //GPHI
+    //GPLO
+    if (count < 4)
+    {
+        printk(KERN_ALERT "chardev: incorrect buffer size from user space\n");
+        return -EINVAL;
+    }
+
+    char buffer[count];
+    memset(buffer, '\0', count * sizeof(buffer[0]));
+
+    //access_ok?
+
+    if (copy_from_user(buffer, buff, count))
+    {
+        //not all data was copied; fully try again?
+        printk(KERN_ALERT "chardev: not all data was copied from user space buffer\n");
+        return 0;
+    }
+
     printk(KERN_ALERT "chardev: write called\n");
-    return 0;
+    printk(KERN_ALERT "chardev: received: %s\n", buffer);
+
+    if      (strcmp(buffer, "GPHI") == 0)
+    {
+        //set pin 4 to HIGH
+        printk(KERN_ALERT "chardev: setting io pin to HIGH\n");
+        iowrite32(1 << 4, gpio + 0x1C);
+    }
+    else if (strcmp(buffer, "GPLO") == 0)
+    {
+        //set pin 4 to LOW
+        printk(KERN_ALERT "chardev: setting io pin to LOW\n");
+        iowrite32(1 << 4, gpio + 0x28);
+    }
+    else
+    {
+        printk(KERN_ALERT "chardev: incorrect command specified\n");
+        return -EINVAL;
+    }
+
+    return count;
 }
 
 struct file_operations chardev_fops =
@@ -140,7 +181,10 @@ static int chardev_init_module(void)
     printk(KERN_WARNING "chardev: read value is now %u\n", val);
 
     //set pin 4 to HIGH
-    iowrite32(1 << 4, gpio + 0x1C);
+    //iowrite32(1 << 4, gpio + 0x1C);
+
+    //set pin 4 to LOW
+    iowrite32(1 << 4, gpio + 0x28);
 
     //do not forget memory barrier when writing!
 
