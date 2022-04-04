@@ -31,10 +31,30 @@
 MODULE_AUTHOR("Emiel vd Brink");
 MODULE_LICENSE("Dual BSD/GPL");
 
-//TODO: explain these magic numbers
-//see if they can be imported from somewhere else
-#define BCM2835_PERI_BASE        0x20000000
-#define GPIO_BASE                (BCM2835_PERI_BASE + 0x200000) /* GPIO controller */
+
+//TODO: move to constants header file
+//see BCM2835 Peripheral manual
+#define BCM2835_PERI_BASE 0x20000000
+#define GPIO_BASE         (BCM2835_PERI_BASE + 0x200000) /* GPIO controller */
+
+#define GPFSEL0           0x0
+#define GPFSEL1           0x4
+#define GPFSEL2           0x8
+
+#define GPSET0            0x1C
+#define GPCLR0            0x28
+
+#define FSEL2             6
+#define FSEL3             9
+#define FSEL4             12
+#define FSEL9             27
+#define FSEL10            0
+#define FSEL11            3
+#define FSEL17            21
+#define FSEL22            6
+#define FSEL23            9
+#define FSEL24            12
+#define FSEL27            21
 
 void *gpio = NULL;
 
@@ -159,7 +179,6 @@ static int chardev_init_module(void)
 
     //todo: check if region is available
     //todo: check /proc/iomem
-    //todo: how many bytes is one register?
     //TODO: reserve gpio region
     gpio = ioremap(GPIO_BASE, 0x30);
     if (gpio == NULL)
@@ -172,20 +191,23 @@ static int chardev_init_module(void)
     printk(KERN_WARNING "chardev: ioremap successful\n");
     printk(KERN_WARNING "chardev: gpio address is %px\n", gpio);
 
-    unsigned int val = ioread32(gpio);
+    //set all used gpio pins to output
+    unsigned int funcSelect = ioread32(gpio + GPFSEL0);
+    funcSelect |= (1 << FSEL2) | (1 << FSEL3) | (1 << FSEL4) | (1 << FSEL9);
+    iowrite32(funcSelect, gpio + GPFSEL0);
 
-    //these 2 statements show the same value, would a barrier here help?
-    printk(KERN_WARNING "chardev: read value is %u\n", val);
+    funcSelect = ioread32(gpio + GPFSEL1);
+    funcSelect |= (1 << FSEL10) | (1 << FSEL11) | (1 << FSEL17);
+    iowrite32(funcSelect, gpio + GPFSEL1);
 
-    //set pin 4 to output
-    iowrite32(val | (1 << 12), gpio);
+    funcSelect = ioread32(gpio + GPFSEL2);
+    funcSelect |= (1 << FSEL22) | (1 << FSEL23) | (1 << FSEL24) | (1 << FSEL27);
+    iowrite32(funcSelect, gpio + GPFSEL2);
 
-    val = ioread32(gpio);
-
-    printk(KERN_WARNING "chardev: read value is now %u\n", val);
-
-    //set pin 4 to LOW
-    iowrite32(1 << 4, gpio + 0x28);
+    //set all used gpio pins to low
+    unsigned int outputSet = 0x0;
+    outputSet |= (1 << 2) | (1 << 3) | (1 << 4) | (1 << 9) | (1 << 10) | (1 << 11) | (1 << 17) | (1 << 22) | (1 << 23) | (1 << 24) | (1 << 27);
+    iowrite32(outputSet, gpio + GPCLR0);
 
     return 0;
 
