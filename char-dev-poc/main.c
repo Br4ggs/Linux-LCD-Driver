@@ -313,16 +313,25 @@ static int chardev_init_module(void)
     iowrite32(outputSet, gpio + GPCLR0);
 
     //Initializing by Instruction
-    set_display_pins(0b00111000000);
-    mdelay(100);
-    set_display_pins(0b00111000000);
-    mdelay(50);
-    set_display_pins(0b00111000000);
-    set_display_pins(0b00111000000);
+    // set_display_pins(0b00111000000);
+    // mdelay(100);
+    // set_display_pins(0b00111000000);
+    // mdelay(50);
+    // set_display_pins(0b00111000000);
+    // set_display_pins(0b00111000000);
 
-    //set display
+    //function set
     clear_display_pins(0b11111111111);
-    set_display_pins(0b00001111000);
+    set_display_pins(0b00111000000);
+    clear_display_pins(0b00000000100);
+    mdelay(1);
+    set_display_pins(0b00000000100);
+    mdelay(1);
+    clear_display_pins(0b00000000100);
+
+    //display set
+    clear_display_pins(0b11111111111);
+    set_display_pins(0b00001110000);
     clear_display_pins(0b00000000100);
     mdelay(1);
     set_display_pins(0b00000000100);
@@ -339,7 +348,7 @@ static int chardev_init_module(void)
     mdelay(1);
     clear_display_pins(0b00000000100);
 
-    mdelay(2000);
+    mdelay(2000); //required?
 
     //entry mode set
     clear_display_pins(0b11111111111);
@@ -351,29 +360,31 @@ static int chardev_init_module(void)
     mdelay(1);
     clear_display_pins(0b00000000100);
 
-    mdelay(500);
+    mdelay(500); //required?
 
-    //write 'a' to screen?
-    clear_display_pins(0b11111111111);
-    mdelay(1);
-    set_display_pins(0b01000001001);
-    clear_display_pins(0b00000000100);
-    mdelay(1);
-    set_display_pins(0b00000000100);
-    mdelay(1);
-    clear_display_pins(0b00000000100);
-
-    // set_display_pins(0b00000000000);
-    // mdelay(10);
-    // set_display_pins(0b00001111000);
-    // mdelay(10);
-
-    //int pins[11] = {RS, RW, E, D0, D1, D2, D3, D4, D5, D6, D7};
-    //set_output_pins_low(pins, 11);
-
-    //read: https://stackoverflow.com/questions/32632877/initialize-integer-array-inline-when-passing-arguments-to-a-method
-    //TODO: test if this works
-    //set_output_pins_low((int[])CHAR_O, 5);
+    int j;
+    for (j = 0; j < 200; j++)
+    {
+        //write 'a' to screen?
+        clear_display_pins(0b11111111111);
+        mdelay(1);
+        set_display_pins(0b01000001001);
+        clear_display_pins(0b00000000100);
+        mdelay(1);
+        set_display_pins(0b00000000100);
+        mdelay(1);
+        clear_display_pins(0b00000000100);
+        mdelay(100);
+    }
+    // //write 'a' to screen?
+    // clear_display_pins(0b11111111111);
+    // mdelay(1);
+    // set_display_pins(0b01000001001);
+    // clear_display_pins(0b00000000100);
+    // mdelay(1);
+    // set_display_pins(0b00000000100);
+    // mdelay(1);
+    // clear_display_pins(0b00000000100);
 
     return 0;
 
