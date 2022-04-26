@@ -28,6 +28,8 @@
 #include <linux/cdev.h>
 #include <asm/io.h>
 
+#include <linux/delay.h>
+
 MODULE_AUTHOR("Emiel vd Brink");
 MODULE_LICENSE("Dual BSD/GPL");
 
@@ -35,7 +37,7 @@ MODULE_LICENSE("Dual BSD/GPL");
 //TODO: move to constants header file
 //see BCM2835 Peripheral manual
 #define BCM2835_PERI_BASE 0x20000000
-#define GPIO_BASE         (BCM2835_PERI_BASE + 0x200000) /* GPIO controller */
+#define GPIO_BASE         (BCM2835_PERI_BASE + 0x200000)
 
 #define GPFSEL0           0x0
 #define GPFSEL1           0x4
@@ -56,7 +58,103 @@ MODULE_LICENSE("Dual BSD/GPL");
 #define FSEL24            12
 #define FSEL27            21
 
+#define RS 2
+#define RW 3
+#define E  4
+#define D0 9
+#define D1 10
+#define D2 11
+#define D3 17
+#define D4 22
+#define D5 23
+#define D6 24
+#define D7 27
+
+#define CHAR_A {D6, D0}             //01000001
+#define CHAR_B {D6, D1}             //01000010
+#define CHAR_C {D6, D1, D0}         //01000011
+#define CHAR_D {D6, D2}             //01000100
+#define CHAR_E {D6, D2, D0}         //01000101
+#define CHAR_F {D6, D2, D1}         //01000110
+#define CHAR_G {D6, D2, D1, D0}     //01000111
+#define CHAR_H {D6, D3}             //01001000
+#define CHAR_I {D6, D3, D0}         //01001001
+#define CHAR_J {D6, D3, D1}         //01001010
+#define CHAR_K {D6, D3, D1, D0}     //01001011
+#define CHAR_L {D6, D3, D2}         //01001100
+#define CHAR_M {D6, D3, D2, D0}     //01001101
+#define CHAR_N {D6, D3, D2, D1}     //01001110
+#define CHAR_O {D6, D3, D2, D1, D0} //01001111
+
+//todo: create 12 bit lcd representation
+//todo: create mapper function to translate 12 bit lcd value to gpio set register value (see picture)
+//todo: do this with a switch function
+
+//needs array count
+//maybe make entire function call a macro?
+//test if this works:
+#define PRINT_CHAR_A 
+
+static uint8_t gpioMap[11] = {RS, RW, E, D0, D1, D2, D3, D4, D5, D6, D7};
+
 void *gpio = NULL;
+
+void set_display_pins(uint16_t data)
+{
+    printk(KERN_ALERT "data is: %04X\n", data);
+
+    uint32_t output = 0x0;
+
+    int i;
+    for(i = 0; i < 11; i++)
+    {
+        uint32_t value = ((data & (1 << i)) > 0);
+
+        printk(KERN_ALERT "value is: %02X\n", value);
+
+        output |= value << gpioMap[i];
+    }
+
+    printk(KERN_ALERT "output is: %08X\n", output);
+    iowrite32(output, gpio + GPSET0);
+}
+
+void clear_display_pins(uint16_t data)
+{
+    uint32_t output = 0x0;
+
+    int i;
+    for(i = 0; i < 11; i++)
+    {
+        uint32_t value = ((data & (1 << i)) > 0);
+        output |= value << gpioMap[i];
+    }
+
+    iowrite32(output, gpio + GPCLR0);
+}
+
+void write_to_register(int *bits, int count, void *address)
+{
+    unsigned int output = 0x0;
+
+    int i;
+    for (i = 0; i < count; i++)
+    {
+        output |= (1 << bits[i]);
+    }
+
+    iowrite32(output, address);
+}
+
+void set_output_pins_high(int *pins, int count)
+{
+    write_to_register(pins, count, gpio + GPSET0);
+}
+
+void set_output_pins_low(int *pins, int count)
+{
+    write_to_register(pins, count, gpio + GPCLR0);
+}
 
 int chardev_open(struct inode *inode, struct file *filp)
 {
@@ -177,6 +275,9 @@ static int chardev_init_module(void)
     
     printk(KERN_WARNING "chardev: char device registration successful\n");
 
+    if (request_mem_region(GPIO_BASE, 0x30, "chardev") == NULL)
+        printk(KERN_WARNING "chardev: GPIO region already reserved\n");
+
     //todo: check if region is available
     //todo: check /proc/iomem
     //TODO: reserve gpio region
@@ -208,6 +309,32 @@ static int chardev_init_module(void)
     unsigned int outputSet = 0x0;
     outputSet |= (1 << 2) | (1 << 3) | (1 << 4) | (1 << 9) | (1 << 10) | (1 << 11) | (1 << 17) | (1 << 22) | (1 << 23) | (1 << 24) | (1 << 27);
     iowrite32(outputSet, gpio + GPCLR0);
+
+
+    set_display_pins(0b00111000000);
+    mdelay(100);
+    set_display_pins(0b00111000000);
+    mdelay(50);
+    set_display_pins(0b00111000000);
+    set_display_pins(0b00111000000);
+
+
+    set_display_pins(0b00001111000);
+    set_display_pins(0b00000000100);
+    mdelay(1);
+    clear_display_pins(0b00000000100);
+
+    // set_display_pins(0b00000000000);
+    // mdelay(10);
+    // set_display_pins(0b00001111000);
+    // mdelay(10);
+
+    //int pins[11] = {RS, RW, E, D0, D1, D2, D3, D4, D5, D6, D7};
+    //set_output_pins_low(pins, 11);
+
+    //read: https://stackoverflow.com/questions/32632877/initialize-integer-array-inline-when-passing-arguments-to-a-method
+    //TODO: test if this works
+    //set_output_pins_low((int[])CHAR_O, 5);
 
     return 0;
 
