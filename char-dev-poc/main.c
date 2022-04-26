@@ -238,6 +238,8 @@ static void chardev_exit_module(void)
 {
     printk(KERN_ALERT "chardev: exit\n");
 
+    clear_display_pins(0b11111111111);
+
     if (chardev_cdev) cdev_del(chardev_cdev);
 
     dev_t dev = MKDEV(15, 0);
@@ -310,7 +312,7 @@ static int chardev_init_module(void)
     outputSet |= (1 << 2) | (1 << 3) | (1 << 4) | (1 << 9) | (1 << 10) | (1 << 11) | (1 << 17) | (1 << 22) | (1 << 23) | (1 << 24) | (1 << 27);
     iowrite32(outputSet, gpio + GPCLR0);
 
-
+    //Initializing by Instruction
     set_display_pins(0b00111000000);
     mdelay(100);
     set_display_pins(0b00111000000);
@@ -318,8 +320,45 @@ static int chardev_init_module(void)
     set_display_pins(0b00111000000);
     set_display_pins(0b00111000000);
 
-
+    //set display
+    clear_display_pins(0b11111111111);
     set_display_pins(0b00001111000);
+    clear_display_pins(0b00000000100);
+    mdelay(1);
+    set_display_pins(0b00000000100);
+    mdelay(1);
+    clear_display_pins(0b00000000100);
+
+    //clear display
+    clear_display_pins(0b11111111111);
+    mdelay(1);
+    set_display_pins(0b00000001000);
+    clear_display_pins(0b00000000100);
+    mdelay(1);
+    set_display_pins(0b00000000100);
+    mdelay(1);
+    clear_display_pins(0b00000000100);
+
+    mdelay(2000);
+
+    //entry mode set
+    clear_display_pins(0b11111111111);
+    mdelay(1);
+    set_display_pins(0b00000110000);
+    clear_display_pins(0b00000000100);
+    mdelay(1);
+    set_display_pins(0b00000000100);
+    mdelay(1);
+    clear_display_pins(0b00000000100);
+
+    mdelay(500);
+
+    //write 'a' to screen?
+    clear_display_pins(0b11111111111);
+    mdelay(1);
+    set_display_pins(0b01000001001);
+    clear_display_pins(0b00000000100);
+    mdelay(1);
     set_display_pins(0b00000000100);
     mdelay(1);
     clear_display_pins(0b00000000100);
