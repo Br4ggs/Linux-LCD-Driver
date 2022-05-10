@@ -88,7 +88,7 @@ void trigger_enable_pulse(void)
 
 void clear_display(void)
 {
-    clear_display_pins(0b11111111111);
+    clear_display_pins(LCD_ALL_PINS);
     set_display_pins(LCD_CLEAR_DISPLAY);
     trigger_enable_pulse();
 
@@ -101,9 +101,9 @@ void clear_display(void)
 
 void write_character(char a)
 {
-    clear_display_pins(0b11111111111);
+    clear_display_pins(LCD_ALL_PINS);
     mdelay(1);
-    set_display_pins(0b00000000001 | (uint16_t)a << 3);
+    set_display_pins(LCD_REGISTER_SET_PIN | (uint16_t)a << 3);
     trigger_enable_pulse();
 
 #ifdef ENABLE_WORD_WRAP
@@ -111,7 +111,7 @@ void write_character(char a)
     current_cursor_pos++;
     if (current_cursor_pos == 16)
     {
-        clear_display_pins(0b11111111111);
+        clear_display_pins(LCD_ALL_PINS);
         set_display_pins(LCD_SET_DDRAM_ADDRESS | 41 << 3);
         trigger_enable_pulse();
     }
@@ -187,7 +187,7 @@ static void chardev_exit_module(void)
 {
     printk(KERN_ALERT "chardev: exit\n");
 
-    clear_display_pins(0b11111111111);
+    clear_display_pins(LCD_ALL_PINS);
 
     if (chardev_cdev) cdev_del(chardev_cdev);
 
@@ -258,12 +258,12 @@ static int chardev_init_module(void)
 
     //See datasheet page 34 on info for initialization sequence
     //function set
-    clear_display_pins(0b11111111111);
+    clear_display_pins(LCD_ALL_PINS);
     set_display_pins(LCD_FUNCTION_SET | LCD_8BIT | LCD_2LINE | LCD_5x8);
     trigger_enable_pulse();
 
     //display set
-    clear_display_pins(0b11111111111);
+    clear_display_pins(LCD_ALL_PINS);
     set_display_pins(LCD_DISPLAY_CONTROL | LCD_DISPLAY_ON | LCD_CURSOR_ON | LCD_CURSOR_BLINK);
     trigger_enable_pulse();
 
@@ -273,7 +273,7 @@ static int chardev_init_module(void)
     mdelay(2000); //TODO: required?
 
     //entry mode set
-    clear_display_pins(0b11111111111);
+    clear_display_pins(LCD_ALL_PINS);
     mdelay(1);
     set_display_pins(LCD_ENTRY_MODE_SET | LCD_INCREMENT);
     trigger_enable_pulse();
@@ -283,7 +283,7 @@ static int chardev_init_module(void)
 
     write_string("Hello world!", 12);
 
-    clear_display_pins(0b11111111111);
+    clear_display_pins(LCD_ALL_PINS);
     set_display_pins(LCD_SET_DDRAM_ADDRESS | 41 << 3);
     trigger_enable_pulse();
 

@@ -42,7 +42,19 @@
 #define D6 24
 #define D7 27
 
-#define LCD_ENABLE_PIN 0b00000000100
+//Pins
+#define LCD_REGISTER_SET_PIN 0b00000000001
+#define LCD_READ_WRITE_PIN   0b00000000010
+#define LCD_ENABLE_PIN       0b00000000100
+#define LCD_D0_PIN           0b00000001000
+#define LCD_D1_PIN           0b00000010000
+#define LCD_D2_PIN           0b00000100000
+#define LCD_D3_PIN           0b00001000000
+#define LCD_D4_PIN           0b00010000000
+#define LCD_D5_PIN           0b00100000000
+#define LCD_D6_PIN           0b01000000000
+#define LCD_D7_PIN           0b10000000000
+#define LCD_ALL_PINS         0b11111111111
 
 //Instructions
 #define LCD_CLEAR_DISPLAY        0b00000001000
