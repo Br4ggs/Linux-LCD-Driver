@@ -110,9 +110,19 @@ MODULE_LICENSE("Dual BSD/GPL");
 #define LCD_5x10         0b00000100000
 #define LCD_5x8          0b00000000000
 
+#define LCD_SET_DDRAM_ADDRESS 0b10000000000
+
+#define ENABLE_WORD_WRAP
+
+#ifdef ENABLE_WORD_WRAP
+
+static int current_cursor_pos = 0;
+
+#endif
+
 static uint8_t gpioMap[11] = {RS, RW, E, D0, D1, D2, D3, D4, D5, D6, D7};
 
-void *gpio = NULL;
+static void *gpio = NULL;
 
 void set_display_pins(uint16_t data)
 {
@@ -162,6 +172,12 @@ void clear_display(void)
     clear_display_pins(0b11111111111);
     set_display_pins(LCD_CLEAR_DISPLAY);
     trigger_enable_pulse();
+
+#ifdef ENABLE_WORD_WRAP
+
+    current_cursor_pos = 0;
+
+#endif
 }
 
 void write_character(char a)
@@ -170,6 +186,18 @@ void write_character(char a)
     mdelay(1);
     set_display_pins(0b00000000001 | (uint16_t)a << 3);
     trigger_enable_pulse();
+
+#ifdef ENABLE_WORD_WRAP
+
+    current_cursor_pos++;
+    if (current_cursor_pos == 16)
+    {
+        clear_display_pins(0b11111111111);
+        set_display_pins(LCD_SET_DDRAM_ADDRESS | 41 << 3);
+        trigger_enable_pulse();
+    }
+
+#endif
 }
 
 void write_string(char *str, int length)
@@ -307,15 +335,7 @@ static int chardev_init_module(void)
 
     funcSelect = ioread32(gpio + GPFSEL2);
     funcSelect |= (1 << FSEL22) | (1 << FSEL23) | (1 << FSEL24) | (1 << FSEL27);
-    iowrite32(funcSelect, gpio + GPFSEL2);
-
-    //Initializing by Instruction
-    // set_display_pins(0b00111000000);
-    // mdelay(100);
-    // set_display_pins(0b00111000000);
-    // mdelay(50);
-    // set_display_pins(0b00111000000);
-    // set_display_pins(0b00111000000);       
+    iowrite32(funcSelect, gpio + GPFSEL2);     
 
     //See datasheet page 34 on info for initialization sequence
     //function set
@@ -339,7 +359,22 @@ static int chardev_init_module(void)
     set_display_pins(LCD_ENTRY_MODE_SET | LCD_INCREMENT);
     trigger_enable_pulse();
 
-    mdelay(500); //TODO: required?
+    // mdelay(500); //TODO: required?
+    mdelay(1000);
+
+    write_string("Hello world!", 12);
+
+    clear_display_pins(0b11111111111);
+    set_display_pins(LCD_SET_DDRAM_ADDRESS | 41 << 3);
+    trigger_enable_pulse();
+
+#ifdef ENABLE_WORD_WRAP
+
+    current_cursor_pos = 41;
+
+#endif
+
+    mdelay(1000);
 
     //TODO: make macros for commands and bits
     write_string("Hello world!", 12);

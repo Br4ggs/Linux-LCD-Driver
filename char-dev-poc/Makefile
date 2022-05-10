@@ -9,14 +9,13 @@ DEPLOY_DIR   := ~
 RASP_IP      := 192.168.178.197
 RASP_USR     := pi
 
-build:
-	make clean
-	make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -C $(KERNEL_DIR) M=`pwd` modules
+all: deploy
 
 clean:
 	rm -rf *.o *.mod *.mod.c .*.cmd *.ko modules.order *.symvers
 
-deploy:
-	make clean
-	make build
+build: clean
+	make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -C $(KERNEL_DIR) M=`pwd` modules
+
+deploy: clean build
 	scp $(BUILD_DIR)/chardev.ko $(BUILD_DIR)/module_load $(BUILD_DIR)/module_unload $(RASP_USR)@$(RASP_IP):$(DEPLOY_DIR)
