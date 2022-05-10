@@ -76,6 +76,40 @@ MODULE_LICENSE("Dual BSD/GPL");
 #define D6 24
 #define D7 27
 
+//Instructions
+#define LCD_CLEAR_DISPLAY 0b00000001000
+
+#define LCD_RETURN_HOME 0b00000010000
+
+#define LCD_ENTRY_MODE_SET    0b00000100000
+#define LCD_INCREMENT         0b00000010000
+#define LCD_DECREMENT         0b00000000000
+#define LCD_SHIFT_ACCOMPANIES 0b00000001000
+
+#define LCD_DISPLAY_CONTROL 0b00001000000
+#define LCD_DISPLAY_ON      0b00000100000
+#define LCD_DISPLAY_OFF     0b00000000000
+#define LCD_CURSOR_ON       0b00000010000
+#define LCD_CURSOR_OFF      0b00000000000
+#define LCD_CURSOR_BLINK    0b00000001000
+#define LCD_CURSOR_NOBLINK  0b00000000000
+
+#define LCD_CURSOR_DISPLAY_SHIFT 0b00010000000
+#define LCD_DISPLAY_SHIFT        0b00001000000
+#define LCD_CURSOR_MOVE          0b00000000000
+#define LCD_SHIFT_RIGHT          0b00000100000
+#define LCD_SHIFT_LEFT           0b00000000000
+
+#define LCD_FUNCTION_SET 0b00100000000
+#define LCD_8BIT         0b00010000000
+#define LCD_4BIT         0b00000000000
+#define LCD_2LINE        0b00001000000
+#define LCD_1LINE        0b00000000000
+#define LCD_5x10         0b00000100000
+#define LCD_5x8          0b00000000000
+
+
+
 //todo: create 12 bit lcd representation
 //todo: create mapper function to translate 12 bit lcd value to gpio set register value (see picture)
 //todo: do this with a switch function
@@ -280,13 +314,12 @@ static int chardev_init_module(void)
     // set_display_pins(0b00111000000);
     // mdelay(50);
     // set_display_pins(0b00111000000);
-    // set_display_pins(0b00111000000);
-
+    // set_display_pins(0b00111000000);       
 
     //See datasheet for info
     //function set
     clear_display_pins(0b11111111111);
-    set_display_pins(0b00111000000);
+    set_display_pins(LCD_FUNCTION_SET | LCD_8BIT | LCD_2LINE | LCD_5x8);
     clear_display_pins(0b00000000100);
     mdelay(1);
     set_display_pins(0b00000000100);
@@ -295,7 +328,7 @@ static int chardev_init_module(void)
 
     //display set
     clear_display_pins(0b11111111111);
-    set_display_pins(0b00001110000);
+    set_display_pins(LCD_DISPLAY_CONTROL | LCD_DISPLAY_ON | LCD_CURSOR_ON | LCD_CURSOR_BLINK);
     clear_display_pins(0b00000000100);
     mdelay(1);
     set_display_pins(0b00000000100);
@@ -305,7 +338,7 @@ static int chardev_init_module(void)
     //clear display
     clear_display_pins(0b11111111111);
     mdelay(1);
-    set_display_pins(0b00000001000);
+    set_display_pins(LCD_CLEAR_DISPLAY);
     clear_display_pins(0b00000000100);
     mdelay(1);
     set_display_pins(0b00000000100);
@@ -317,7 +350,8 @@ static int chardev_init_module(void)
     //entry mode set
     clear_display_pins(0b11111111111);
     mdelay(1);
-    set_display_pins(0b00000110000);
+    set_display_pins(LCD_ENTRY_MODE_SET | LCD_INCREMENT);
+    //set_display_pins(0b00000110000);
     clear_display_pins(0b00000000100);
     mdelay(1);
     set_display_pins(0b00000000100);
@@ -328,6 +362,8 @@ static int chardev_init_module(void)
 
     //TODO: write some text to screen
     //"hello world!"
+
+    //TODO: make macros for commands and bits
 
     int j;
     for (j = 0; j < 200; j++)
@@ -343,6 +379,18 @@ static int chardev_init_module(void)
         clear_display_pins(0b00000000100);
         mdelay(100);
     }
+
+    mdelay(2000);
+
+    //clear display
+    clear_display_pins(0b11111111111);
+    mdelay(1);
+    set_display_pins(LCD_CLEAR_DISPLAY);
+    clear_display_pins(0b00000000100);
+    mdelay(1);
+    set_display_pins(0b00000000100);
+    mdelay(1);
+    clear_display_pins(0b00000000100);
 
     return 0;
 
