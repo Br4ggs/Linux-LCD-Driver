@@ -76,6 +76,8 @@ MODULE_LICENSE("Dual BSD/GPL");
 #define D6 24
 #define D7 27
 
+#define LCD_ENABLE_PIN 0b00000000100
+
 //Instructions
 #define LCD_CLEAR_DISPLAY 0b00000001000
 
@@ -107,12 +109,6 @@ MODULE_LICENSE("Dual BSD/GPL");
 #define LCD_1LINE        0b00000000000
 #define LCD_5x10         0b00000100000
 #define LCD_5x8          0b00000000000
-
-
-
-//todo: create 12 bit lcd representation
-//todo: create mapper function to translate 12 bit lcd value to gpio set register value (see picture)
-//todo: do this with a switch function
 
 static uint8_t gpioMap[11] = {RS, RW, E, D0, D1, D2, D3, D4, D5, D6, D7};
 
@@ -152,9 +148,44 @@ void clear_display_pins(uint16_t data)
     iowrite32(output, gpio + GPCLR0);
 }
 
+void trigger_enable_pulse(void)
+{
+    clear_display_pins(LCD_ENABLE_PIN);
+    mdelay(1);
+    set_display_pins(LCD_ENABLE_PIN);
+    mdelay(1);
+    clear_display_pins(LCD_ENABLE_PIN);
+}
+
+void clear_display(void)
+{
+    clear_display_pins(0b11111111111);
+    set_display_pins(LCD_CLEAR_DISPLAY);
+    trigger_enable_pulse();
+}
+
+void write_character(char a)
+{
+    clear_display_pins(0b11111111111);
+    mdelay(1);
+    set_display_pins(0b00000000001 | (uint16_t)a << 3);
+    trigger_enable_pulse();
+}
+
+void write_string(char *str, int length)
+{
+    int i;
+    for(i = 0; i < length; i++)
+    {
+        write_character(str[i]);
+    }
+}
+
 int chardev_open(struct inode *inode, struct file *filp)
 {
     printk(KERN_ALERT "chardev: open called\n");
+    clear_display();
+
     return 0;
 }
 
@@ -170,17 +201,8 @@ ssize_t chardev_read(struct file *filp, char __user *buff, size_t count, loff_t 
     return 0;
 }
 
-//valid commands are:
-//GPHI
-//GPLO
 ssize_t chardev_write(struct file *filp, const char __user *buff, size_t count, loff_t *offp)
 {
-    if (count < 4)
-    {
-        printk(KERN_ALERT "chardev: incorrect buffer size from user space\n");
-        return -EINVAL;
-    }
-
     char buffer[count];
     memset(buffer, '\0', count * sizeof(buffer[0]));
 
@@ -196,23 +218,7 @@ ssize_t chardev_write(struct file *filp, const char __user *buff, size_t count, 
     printk(KERN_ALERT "chardev: write called\n");
     printk(KERN_ALERT "chardev: received: %s\n", buffer);
 
-    if      (strcmp(buffer, "GPHI") == 0)
-    {
-        //set pin 4 to HIGH
-        printk(KERN_ALERT "chardev: setting io pin to HIGH\n");
-        iowrite32(1 << 4, gpio + 0x1C);
-    }
-    else if (strcmp(buffer, "GPLO") == 0)
-    {
-        //set pin 4 to LOW
-        printk(KERN_ALERT "chardev: setting io pin to LOW\n");
-        iowrite32(1 << 4, gpio + 0x28);
-    }
-    else
-    {
-        printk(KERN_ALERT "chardev: incorrect command specified\n");
-        return -EINVAL;
-    }
+    write_string(buffer, count);
 
     return count;
 }
@@ -303,11 +309,6 @@ static int chardev_init_module(void)
     funcSelect |= (1 << FSEL22) | (1 << FSEL23) | (1 << FSEL24) | (1 << FSEL27);
     iowrite32(funcSelect, gpio + GPFSEL2);
 
-    //set all used gpio pins to low
-    unsigned int outputSet = 0x0;
-    outputSet |= (1 << 2) | (1 << 3) | (1 << 4) | (1 << 9) | (1 << 10) | (1 << 11) | (1 << 17) | (1 << 22) | (1 << 23) | (1 << 24) | (1 << 27);
-    iowrite32(outputSet, gpio + GPCLR0);
-
     //Initializing by Instruction
     // set_display_pins(0b00111000000);
     // mdelay(100);
@@ -316,81 +317,36 @@ static int chardev_init_module(void)
     // set_display_pins(0b00111000000);
     // set_display_pins(0b00111000000);       
 
-    //See datasheet for info
+    //See datasheet page 34 on info for initialization sequence
     //function set
     clear_display_pins(0b11111111111);
     set_display_pins(LCD_FUNCTION_SET | LCD_8BIT | LCD_2LINE | LCD_5x8);
-    clear_display_pins(0b00000000100);
-    mdelay(1);
-    set_display_pins(0b00000000100);
-    mdelay(1);
-    clear_display_pins(0b00000000100);
+    trigger_enable_pulse();
 
     //display set
     clear_display_pins(0b11111111111);
     set_display_pins(LCD_DISPLAY_CONTROL | LCD_DISPLAY_ON | LCD_CURSOR_ON | LCD_CURSOR_BLINK);
-    clear_display_pins(0b00000000100);
-    mdelay(1);
-    set_display_pins(0b00000000100);
-    mdelay(1);
-    clear_display_pins(0b00000000100);
+    trigger_enable_pulse();
 
     //clear display
-    clear_display_pins(0b11111111111);
-    mdelay(1);
-    set_display_pins(LCD_CLEAR_DISPLAY);
-    clear_display_pins(0b00000000100);
-    mdelay(1);
-    set_display_pins(0b00000000100);
-    mdelay(1);
-    clear_display_pins(0b00000000100);
+    clear_display();
 
-    mdelay(2000); //required?
+    mdelay(2000); //TODO: required?
 
     //entry mode set
     clear_display_pins(0b11111111111);
     mdelay(1);
     set_display_pins(LCD_ENTRY_MODE_SET | LCD_INCREMENT);
-    //set_display_pins(0b00000110000);
-    clear_display_pins(0b00000000100);
-    mdelay(1);
-    set_display_pins(0b00000000100);
-    mdelay(1);
-    clear_display_pins(0b00000000100);
+    trigger_enable_pulse();
 
-    mdelay(500); //required?
-
-    //TODO: write some text to screen
-    //"hello world!"
+    mdelay(500); //TODO: required?
 
     //TODO: make macros for commands and bits
-
-    int j;
-    for (j = 0; j < 200; j++)
-    {
-        //write 'A' to screen?
-        clear_display_pins(0b11111111111);
-        mdelay(1);
-        set_display_pins(0b01000001001);
-        clear_display_pins(0b00000000100);
-        mdelay(1);
-        set_display_pins(0b00000000100);
-        mdelay(1);
-        clear_display_pins(0b00000000100);
-        mdelay(100);
-    }
+    write_string("Hello world!", 12);
 
     mdelay(2000);
 
-    //clear display
-    clear_display_pins(0b11111111111);
-    mdelay(1);
-    set_display_pins(LCD_CLEAR_DISPLAY);
-    clear_display_pins(0b00000000100);
-    mdelay(1);
-    set_display_pins(0b00000000100);
-    mdelay(1);
-    clear_display_pins(0b00000000100);
+    clear_display();
 
     return 0;
 
