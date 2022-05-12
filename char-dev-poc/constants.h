@@ -1,6 +1,9 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
+//TODO: bitfield for macros here or GPIO registers?
+//TODO: turn these into constants
+
 //see BCM2835 Peripheral manual
 #define BCM2835_PERI_BASE 0x20000000
 #define GPIO_BASE         (BCM2835_PERI_BASE + 0x200000)
