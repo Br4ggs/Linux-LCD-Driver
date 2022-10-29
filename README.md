@@ -4,6 +4,8 @@ This repository contains all sourcecode for the LCD kernel module personal proje
 
 This project is aimed towards cross-compilation. Code is compiled on the development environment and transferred over to the production environment: A raspberry pi. (see section `Requirements` for the required hardware and software versions)
 
+[Demo video!](https://www.youtube.com/watch?v=KRJz6AVv7Hs)
+
 ## Contents
 
 The repository contains the following contents:
